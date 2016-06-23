@@ -27,10 +27,8 @@ var csv = flag.Bool("c", false, "CSV output. First, Middle, Last, and Maiden nam
 
 func main() {
 	flag.Parse()
-	if *interactive {
-		fmt.Println("Type a name and press ENTER to process it. Type q or quit to exit.")
-		fmt.Print("Name: ")
-	}
+
+	// Need this mess for Windows console. :-/
 	var stdin io.Reader = os.Stdin
 	var stdout io.Writer = os.Stdout
 	var stderr io.Writer = os.Stderr
@@ -39,30 +37,48 @@ func main() {
 		stdout = transform.NewWriter(os.Stdout, charmap.CodePage850.NewEncoder())
 		stderr = transform.NewWriter(os.Stderr, charmap.CodePage850.NewEncoder())
 	}
+
+	// Prepare Scanner.
 	scanner := bufio.NewScanner(stdin)
-	for scanner.Scan() {
-		input := strings.ToLower(scanner.Text())
-		if input == "q" || input == "quit" {
-			break
-		}
-		var n fmt.Stringer
-		n, err := parsename.New(scanner.Text())
-		if err != nil {
-			fmt.Fprintln(stderr, "parsing name:", err)
-			if *interactive {
-				fmt.Print("Name: ")
-			}
-			continue
-		}
-		if *csv {
-			n = &csvName{n.(*parsename.Name)}
-		}
-		fmt.Fprintln(stdout, n)
+
+	// Doc prompt if required.
+	if *interactive {
+		fmt.Println("Type a name and press ENTER to process it. Type q or quit to exit.")
+	}
+
+	// Main loop.
+	for {
 		if *interactive {
 			fmt.Print("Name: ")
 		}
-	}
-	if err := scanner.Err(); err != nil {
-		fmt.Fprintln(os.Stderr, "reading standard input:", err)
+		// Scanning is over.
+		if !scanner.Scan() {
+			// Check for Scanner error.
+			if err := scanner.Err(); err != nil {
+				fmt.Fprintln(os.Stderr, "reading standard input:", err)
+			}
+			break
+		}
+		// Sanitize input.
+		input := strings.ToLower(strings.TrimSpace(scanner.Text()))
+		// Check for exit request.
+		if input == "q" || input == "quit" {
+			break
+		}
+		// Go interfaces are wonderful. :)
+		var n fmt.Stringer
+		// Parse.
+		n, err := parsename.New(scanner.Text())
+		// Check for parse error.
+		if err != nil {
+			fmt.Fprintln(stderr, "parsing name:", err)
+			continue
+		}
+		// CSV output via composition.
+		if *csv {
+			n = &csvName{n.(*parsename.Name)}
+		}
+		// Finally print it out.
+		fmt.Fprintln(stdout, n)
 	}
 }
