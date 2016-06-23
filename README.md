@@ -6,7 +6,7 @@ It is a fork / port of Edwood Ocasio's Python parsename https://github.com/eocas
 ## Usage
 
 ### Go package
-```
+```go
 import "github.com/jecolon/parsename"
 
 n, err := parsename.New("Juan J. del Valle de la Cruz")
@@ -26,11 +26,20 @@ n.Parse()
 
 ### Commandline tool
 
-You can build the commandline tool in cmd with
-```
-go build -o parsename
+You can build the commandline tool in cmd/ with
+```bash
+$ go build -o parsename
 
 Usage of ./parsename:
   -c	CSV output. First, Middle, Last, and Maiden names.
   -i	Interactive mode with prompts.
+
+# Use like any other stdin to stdout UNIX pipe tool.
+$ cat names.txt | ./parsename -c
+
+# Use interactively.
+$ ./parsename
+
+# Interactive with prompts and CSV output.
+$ ./parsename -i -c
 ```
