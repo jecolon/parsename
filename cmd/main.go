@@ -4,14 +4,10 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
-	"io"
 	"os"
-	"runtime"
 	"strings"
 
-	"golang.org/x/text/encoding/charmap"
-	"golang.org/x/text/transform"
-	"local/parsename"
+	"github.com/jecolon/parsename"
 )
 
 type csvName struct {
@@ -28,18 +24,8 @@ var csv = flag.Bool("c", false, "CSV output. First, Middle, Last, and Maiden nam
 func main() {
 	flag.Parse()
 
-	// Need this mess for Windows console. :-/
-	var stdin io.Reader = os.Stdin
-	var stdout io.Writer = os.Stdout
-	var stderr io.Writer = os.Stderr
-	if runtime.GOOS == "windows" {
-		stdin = transform.NewReader(os.Stdin, charmap.CodePage850.NewDecoder())
-		stdout = transform.NewWriter(os.Stdout, charmap.CodePage850.NewEncoder())
-		stderr = transform.NewWriter(os.Stderr, charmap.CodePage850.NewEncoder())
-	}
-
 	// Prepare Scanner.
-	scanner := bufio.NewScanner(stdin)
+	scanner := bufio.NewScanner(os.Stdin)
 
 	// Doc prompt if required.
 	if *interactive {
@@ -68,10 +54,10 @@ func main() {
 		// Go interfaces are wonderful. :)
 		var n fmt.Stringer
 		// Parse.
-		n, err := parsename.New(scanner.Text())
+		n, err := parsename.New(input)
 		// Check for parse error.
 		if err != nil {
-			fmt.Fprintln(stderr, "parsing name:", err)
+			fmt.Fprintf(os.Stderr, "parsing name %q: %v\n", input, err)
 			continue
 		}
 		// CSV output via composition.
@@ -79,6 +65,6 @@ func main() {
 			n = &csvName{n.(*parsename.Name)}
 		}
 		// Finally print it out.
-		fmt.Fprintln(stdout, n)
+		fmt.Fprintln(os.Stdout, n)
 	}
 }
